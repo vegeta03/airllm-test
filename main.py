@@ -25,8 +25,8 @@ print(f"Transformers version: {transformers.__version__}")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-# Smaller context size to reduce memory usage
-MAX_LENGTH = 64
+# Using full context length
+MAX_LENGTH = 131072  # 128K tokens
 
 # Model configuration
 model_id = "meta-llama/Llama-3.1-8B"
