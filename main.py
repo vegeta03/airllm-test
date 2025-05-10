@@ -64,7 +64,7 @@ try:
     # First attempt with standard settings
     generation_output = model.generate(
         input_tokens['input_ids'],
-        max_new_tokens=20,
+        max_new_tokens=25600,  # 20% of 128K context window
         do_sample=False  # Deterministic generation is more stable
     )
     
@@ -87,7 +87,7 @@ except Exception as e:
         # Simplified generation settings
         generation_output = model.generate(
             input_tokens['input_ids'],
-            max_length=input_tokens['input_ids'].shape[1] + 10  # Input length + 10 new tokens
+            max_length=input_tokens['input_ids'].shape[1] + 25600  # Input length + 20% of 128K context window
         )
         
         output = model.tokenizer.decode(generation_output[0])
