@@ -27,9 +27,6 @@ print(f"Transformers version: {transformers.__version__}")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-# Smaller context size to reduce memory usage
-MAX_LENGTH = 64
-
 # Model configuration
 model_id = "meta-llama/Llama-3.1-8B"
 
@@ -44,13 +41,41 @@ model.tokenizer.pad_token = model.tokenizer.eos_token
 
 print("\nPreparing to run Llama-3.1-8B with AirLLM...")
 
-# Input text for generation
-input_text = [
-    'Explain quantum computing in simple terms.'
-]
+# Get input from the user
+print("\nEnter your question or prompt (press Enter when done):")
+user_input = input("\n> ")
+
+# Function to calculate optimal MAX_LENGTH based on input size
+def calculate_max_length(text, model_tokenizer):
+    # Use the model's own tokenizer for accurate token counting
+    try:
+        # Get token count using the model's tokenizer
+        token_count = len(model_tokenizer.encode(text))
+        
+        # Set reasonable bounds (min 64, max 4096)
+        min_length = 64
+        max_length = 4096
+        
+        # Set MAX_LENGTH to at least double the token count to allow room for generation
+        # but cap it within reasonable bounds
+        suggested_length = max(min_length, min(token_count * 2, max_length))
+        
+        print(f"Input token count (using Llama tokenizer): {token_count}")
+        print(f"Setting MAX_LENGTH to: {suggested_length}")
+        return suggested_length
+    except Exception as e:
+        print(f"Error calculating token length: {e}")
+        print("Defaulting to MAX_LENGTH = 512")
+        return 512
+
+# Calculate MAX_LENGTH dynamically based on input
+MAX_LENGTH = calculate_max_length(user_input, model.tokenizer) + 5
+
+# Create a list with the user input
+input_text = [user_input]
 
 # Tokenize input with proper settings
-print("Tokenizing input...")
+print("\nTokenizing input...")
 input_tokens = model.tokenizer(
     input_text,
     return_tensors="pt",
