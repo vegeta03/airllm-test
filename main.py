@@ -23,17 +23,28 @@ from airllm import AutoModel
 print(f"Python version: {sys.version}")
 print(f"Transformers version: {transformers.__version__}")
 
-# Check if CUDA is available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+# Get device from environment or fall back to auto-detection
+device_preference = os.environ.get("DEVICE", "").lower()
+
+# Validate and set device
+if device_preference == "cuda" and torch.cuda.is_available():
+    device = torch.device("cuda")
+    print(f"Using CUDA as specified in environment config")
+elif device_preference == "cpu":
+    device = torch.device("cpu")
+    print(f"Using CPU as specified in environment config")
+else:
+    # Auto-detect if not specified or invalid value
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using auto-detected device: {device}")
 
 # Model configuration
 model_id = "meta-llama/Llama-3.1-8B"
 
-# Initialize model with minimal parameters
+# Initialize model with the configured device
 model = AutoModel.from_pretrained(
     model_id,
-    device="cpu"  # Explicitly use CPU
+    device=str(device)  # Use the configured device from .env
 )
 
 # Explicitly set padding token
