@@ -1,5 +1,6 @@
 # Fix for Llama-3.1-8B with AirLLM on CPU
 
+import dotenv
 import torch
 import os
 import transformers
@@ -7,7 +8,8 @@ import sys
 from huggingface_hub import login
 
 # Login to Hugging Face to access the model
-login(token=os.getenv("HF_TOKEN"))
+dotenv.load_dotenv(override=True)
+login(token=os.environ.get("HF_TOKEN"))
 
 # Configure AirLLM for better compatibility
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"  # Disable warnings
@@ -21,20 +23,33 @@ from airllm import AutoModel
 print(f"Python version: {sys.version}")
 print(f"Transformers version: {transformers.__version__}")
 
-# Check if CUDA is available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+# Get device from environment or fall back to auto-detection
+device_preference = os.environ.get("DEVICE", "").lower()
 
+<<<<<<< HEAD
 # Using full context length
 MAX_LENGTH = 131072  # 128K tokens
+=======
+# Validate and set device
+if device_preference == "cuda" and torch.cuda.is_available():
+    device = torch.device("cuda")
+    print(f"Using CUDA as specified in environment config")
+elif device_preference == "cpu":
+    device = torch.device("cpu")
+    print(f"Using CPU as specified in environment config")
+else:
+    # Auto-detect if not specified or invalid value
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using auto-detected device: {device}")
+>>>>>>> d92a1acb1b1f36f18f72666da02651b399718966
 
 # Model configuration
 model_id = "meta-llama/Llama-3.1-8B"
 
-# Initialize model with minimal parameters
+# Initialize model with the configured device
 model = AutoModel.from_pretrained(
     model_id,
-    device="cpu"  # Explicitly use CPU
+    device=str(device)  # Use the configured device from .env
 )
 
 # Explicitly set padding token
@@ -42,13 +57,41 @@ model.tokenizer.pad_token = model.tokenizer.eos_token
 
 print("\nPreparing to run Llama-3.1-8B with AirLLM...")
 
-# Input text for generation
-input_text = [
-    'Explain quantum computing in simple terms.'
-]
+# Get input from the user
+print("\nEnter your question or prompt (press Enter when done):")
+user_input = input("\n> ")
+print("\n\n\n")
+# Function to calculate optimal MAX_LENGTH based on input size
+def calculate_max_length(text, model_tokenizer):
+    # Use the model's own tokenizer for accurate token counting
+    try:
+        # Get token count using the model's tokenizer
+        token_count = len(model_tokenizer.encode(text))
+        
+        # Set reasonable bounds (min 64, max 4096)
+        min_length = 64
+        max_length = 4096
+        
+        # Set MAX_LENGTH for tokenization of the input text
+        # Use a reasonable multiple of the input length, capped by min/max bounds
+        suggested_length = max(min_length, min(token_count * 2, max_length))
+        
+        print(f"Input token count (using Llama tokenizer): {token_count}")
+        print(f"Setting MAX_LENGTH to: {suggested_length}")
+        return suggested_length
+    except Exception as e:
+        print(f"Error calculating token length: {e}")
+        print("Defaulting to MAX_LENGTH = 512")
+        return 512
+
+# Calculate MAX_LENGTH dynamically based on input
+MAX_LENGTH = calculate_max_length(user_input, model.tokenizer) + 5
+
+# Create a list with the user input
+input_text = [user_input]
 
 # Tokenize input with proper settings
-print("Tokenizing input...")
+print("\nTokenizing input...")
 input_tokens = model.tokenizer(
     input_text,
     return_tensors="pt",
@@ -64,7 +107,7 @@ try:
     # First attempt with standard settings
     generation_output = model.generate(
         input_tokens['input_ids'],
-        max_new_tokens=25600,  # 20% of 128K context window
+        max_new_tokens=2048,  # Maximum output token length for Llama-3.1-8B
         do_sample=False  # Deterministic generation is more stable
     )
     
@@ -87,7 +130,7 @@ except Exception as e:
         # Simplified generation settings
         generation_output = model.generate(
             input_tokens['input_ids'],
-            max_length=input_tokens['input_ids'].shape[1] + 25600  # Input length + 20% of 128K context window
+            max_length=input_tokens['input_ids'].shape[1] + 2048  # Account for input tokens + maximum output length
         )
         
         output = model.tokenizer.decode(generation_output[0])
