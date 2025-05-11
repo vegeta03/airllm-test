@@ -1,5 +1,6 @@
 # Fix for Llama-3.1-8B with AirLLM on CPU
 
+import dotenv
 import torch
 import os
 import transformers
@@ -7,7 +8,8 @@ import sys
 from huggingface_hub import login
 
 # Login to Hugging Face to access the model
-login(token=os.getenv("HF_TOKEN"))
+dotenv.load_dotenv(override=True)
+login(token=os.environ.get("HF_TOKEN"))
 
 # Configure AirLLM for better compatibility
 os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"  # Disable warnings
@@ -64,7 +66,7 @@ try:
     # First attempt with standard settings
     generation_output = model.generate(
         input_tokens['input_ids'],
-        max_new_tokens=20,
+        max_new_tokens=2048,  # Maximum output token length for Llama-3.1-8B
         do_sample=False  # Deterministic generation is more stable
     )
     
@@ -87,7 +89,7 @@ except Exception as e:
         # Simplified generation settings
         generation_output = model.generate(
             input_tokens['input_ids'],
-            max_length=input_tokens['input_ids'].shape[1] + 10  # Input length + 20% of 128K context window
+            max_length=input_tokens['input_ids'].shape[1] + 2048  # Account for input tokens + maximum output length
         )
         
         output = model.tokenizer.decode(generation_output[0])
