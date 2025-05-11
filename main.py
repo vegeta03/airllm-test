@@ -26,10 +26,6 @@ print(f"Transformers version: {transformers.__version__}")
 # Get device from environment or fall back to auto-detection
 device_preference = os.environ.get("DEVICE", "").lower()
 
-<<<<<<< HEAD
-# Using full context length
-MAX_LENGTH = 131072  # 128K tokens
-=======
 # Validate and set device
 if device_preference == "cuda" and torch.cuda.is_available():
     device = torch.device("cuda")
@@ -41,7 +37,6 @@ else:
     # Auto-detect if not specified or invalid value
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using auto-detected device: {device}")
->>>>>>> d92a1acb1b1f36f18f72666da02651b399718966
 
 # Model configuration
 model_id = "meta-llama/Llama-3.1-8B"
