@@ -44,7 +44,7 @@ print("\nPreparing to run Llama-3.1-8B with AirLLM...")
 # Get input from the user
 print("\nEnter your question or prompt (press Enter when done):")
 user_input = input("\n> ")
-
+print("\n\n\n")
 # Function to calculate optimal MAX_LENGTH based on input size
 def calculate_max_length(text, model_tokenizer):
     # Use the model's own tokenizer for accurate token counting
@@ -56,8 +56,8 @@ def calculate_max_length(text, model_tokenizer):
         min_length = 64
         max_length = 4096
         
-        # Set MAX_LENGTH to at least double the token count to allow room for generation
-        # but cap it within reasonable bounds
+        # Set MAX_LENGTH for tokenization of the input text
+        # Use a reasonable multiple of the input length, capped by min/max bounds
         suggested_length = max(min_length, min(token_count * 2, max_length))
         
         print(f"Input token count (using Llama tokenizer): {token_count}")
